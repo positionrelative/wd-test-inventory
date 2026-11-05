@@ -9,9 +9,9 @@ export async function api(method, path, body) {
     return { status: res.status, data: await res.json().catch(() => null) };
 }
 
-document.querySelector('#ping')?.addEventListener('click', async () => {
+document.querySelector('#load-assets')?.addEventListener('click', async () => {
     const out = document.querySelector('#output');
     out.textContent = 'Loading…';
-    const { status, data } = await api('GET', '/ping');
+    const { status, data } = await api('GET', '/assets?per_page=5');
     out.textContent = `HTTP ${status}\n${JSON.stringify(data, null, 2)}`;
 });

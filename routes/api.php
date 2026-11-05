@@ -8,11 +8,6 @@ use App\Http\Controllers\Api\V1\ManufacturerController;
 use App\Http\Controllers\Api\V1\VendorController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/ping', fn () => response()->json([
-    'status' => 'ok',
-    'time' => now()->toIso8601String(),
-]));
-
 Route::get('assets/count', [AssetController::class, 'count'])->name('assets.count');
 Route::get('asset-models/count', [AssetModelController::class, 'count'])->name('asset-models.count');
 Route::get('contracts/count', [ContractController::class, 'count'])->name('contracts.count');

@@ -15,10 +15,10 @@ final class RateLimitTest extends TestCase
     {
         config(['api.rate_limit_per_minute' => 2]);
 
-        $this->getJson('/api/v1/ping')->assertOk()->assertHeader('X-RateLimit-Limit', '2');
-        $this->getJson('/api/v1/ping')->assertOk();
+        $this->getJson('/api/v1/vendors/count')->assertOk()->assertHeader('X-RateLimit-Limit', '2');
+        $this->getJson('/api/v1/vendors/count')->assertOk();
 
-        $this->getJson('/api/v1/ping')
+        $this->getJson('/api/v1/vendors/count')
             ->assertTooManyRequests()
             ->assertHeader('Retry-After')
             ->assertJsonPath('error.status', 429)

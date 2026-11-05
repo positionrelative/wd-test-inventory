@@ -129,7 +129,7 @@ final class ApiTrafficLoggingTest extends TestCase
     {
         config(['api_logging.enabled' => false]);
 
-        $this->getJson('/api/v1/ping')->assertOk();
+        $this->getJson('/api/v1/vendors/count')->assertOk();
 
         $this->assertDatabaseCount('api_request_logs', 0);
     }

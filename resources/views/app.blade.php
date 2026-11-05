@@ -9,8 +9,8 @@
 <body class="min-h-screen bg-gray-50 p-8 font-sans text-gray-900">
     <main class="mx-auto max-w-2xl space-y-4">
         <h1 class="text-2xl font-semibold">{{ config('app.name') }}</h1>
-        <button id="ping" class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-            GET /api/v1/ping
+        <button id="load-assets" class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+            GET /api/v1/assets?per_page=5
         </button>
         <pre id="output" class="rounded bg-gray-900 p-4 text-sm text-green-300"></pre>
     </main>
