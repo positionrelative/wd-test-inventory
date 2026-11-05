@@ -19,15 +19,19 @@ final class ContractAssetApiTest extends TestCase
         $contract->assets()->attach(Asset::factory()->count(3)->create());
         Asset::factory()->create(); // not on the contract
 
-        $this->getJson("/api/v1/contracts/{$contract->id}/assets?per_page=2")
+        $first = $this->getJson("/api/v1/contracts/{$contract->id}/assets?per_page=2")
             ->assertOk()
             ->assertExactJsonStructure([
                 'data' => ['*' => ['id', 'asset_tag', 'serial_number']],
-                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+                'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
             ])
             ->assertJsonCount(2, 'data')
-            ->assertJsonPath('meta.total', 3)
-            ->assertJsonPath('meta.last_page', 2);
+            ->assertJsonPath('meta.prev_cursor', null);
+
+        $this->getJson("/api/v1/contracts/{$contract->id}/assets?per_page=2&cursor={$first->json('meta.next_cursor')}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.next_cursor', null);
     }
 
     public function test_index_supports_includes(): void

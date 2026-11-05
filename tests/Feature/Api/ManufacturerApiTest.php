@@ -22,20 +22,26 @@ final class ManufacturerApiTest extends TestCase
             ->assertOk()
             ->assertExactJsonStructure([
                 'data' => ['*' => ['id', 'name']],
-                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+                'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
             ])
             ->assertJsonPath('data.*.name', ['Apple', 'Dell', 'Lenovo'])
-            ->assertJsonPath('meta.total', 3);
+            ->assertJsonPath('meta.next_cursor', null);
     }
 
-    public function test_index_is_paginated(): void
+    public function test_index_is_cursor_paginated_in_name_order(): void
     {
-        Manufacturer::factory()->count(3)->create();
+        foreach (['Lenovo', 'Apple', 'Dell'] as $name) {
+            Manufacturer::factory()->create(['name' => $name]);
+        }
 
-        $this->getJson('/api/v1/manufacturers?per_page=2&page=2')
+        $first = $this->getJson('/api/v1/manufacturers?per_page=2')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('meta.current_page', 2);
+            ->assertJsonPath('data.*.name', ['Apple', 'Dell']);
+
+        $this->getJson('/api/v1/manufacturers?per_page=2&cursor=' . $first->json('meta.next_cursor'))
+            ->assertOk()
+            ->assertJsonPath('data.*.name', ['Lenovo'])
+            ->assertJsonPath('meta.next_cursor', null);
     }
 
     public function test_index_rejects_invalid_pagination(): void

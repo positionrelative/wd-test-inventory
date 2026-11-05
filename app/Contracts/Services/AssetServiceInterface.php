@@ -7,17 +7,15 @@ namespace App\Contracts\Services;
 use App\Enums\AssetInclude;
 use App\Exceptions\AssetInUseException;
 use App\Models\Asset;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 
 interface AssetServiceInterface
 {
     /**
-     * List view: only the requested relations are eager loaded.
-     *
      * @param list<AssetInclude> $includes
-     * @return LengthAwarePaginator<int, Asset>
+     * @return CursorPaginator<int, Asset>
      */
-    public function paginate(int $perPage, array $includes = []): LengthAwarePaginator;
+    public function paginate(int $perPage, array $includes = []): CursorPaginator;
 
     /** Detail view: model, manufacturer and contracts loaded. */
     public function get(Asset $asset): Asset;

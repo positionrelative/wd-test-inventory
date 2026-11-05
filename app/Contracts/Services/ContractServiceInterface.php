@@ -9,12 +9,12 @@ use App\Exceptions\AssetNotAttachedException;
 use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
 use App\Models\Contract;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 
 interface ContractServiceInterface
 {
-    /** @return LengthAwarePaginator<int, Contract> List view: without assets. */
-    public function paginate(int $perPage): LengthAwarePaginator;
+    /** @return CursorPaginator<int, Contract> List view: without assets, cursor paginated. */
+    public function paginate(int $perPage): CursorPaginator;
 
     /** @return Contract with its assets, for the detail view. */
     public function get(Contract $contract): Contract;
@@ -29,12 +29,12 @@ interface ContractServiceInterface
     public function delete(Contract $contract): void;
 
     /**
-     * Assets on the contract, paginated, for contracts with many assets.
+     * Assets on the contract, cursor paginated, for contracts with many assets.
      *
      * @param list<AssetInclude> $includes
-     * @return LengthAwarePaginator<int, Asset>
+     * @return CursorPaginator<int, Asset>
      */
-    public function paginateAssets(Contract $contract, int $perPage, array $includes = []): LengthAwarePaginator;
+    public function paginateAssets(Contract $contract, int $perPage, array $includes = []): CursorPaginator;
 
     /** Idempotent: attaching an already attached asset changes nothing. */
     public function attachAsset(Contract $contract, Asset $asset): void;

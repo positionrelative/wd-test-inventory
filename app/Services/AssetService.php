@@ -8,19 +8,19 @@ use App\Contracts\Services\AssetServiceInterface;
 use App\Enums\AssetInclude;
 use App\Exceptions\AssetInUseException;
 use App\Models\Asset;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 
 final class AssetService implements AssetServiceInterface
 {
     /** Relations of the detail view. */
     private const DETAIL_RELATIONS = ['assetModel', 'manufacturer', 'contracts'];
 
-    public function paginate(int $perPage, array $includes = []): LengthAwarePaginator
+    public function paginate(int $perPage, array $includes = []): CursorPaginator
     {
         return Asset::query()
             ->with(AssetInclude::relationsFor($includes))
             ->orderBy('id')
-            ->paginate($perPage);
+            ->cursorPaginate($perPage);
     }
 
     public function get(Asset $asset): Asset

@@ -6,15 +6,16 @@ namespace App\Services;
 
 use App\Contracts\Services\VendorServiceInterface;
 use App\Models\Vendor;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 
 final class VendorService implements VendorServiceInterface
 {
-    public function paginate(int $perPage): LengthAwarePaginator
+    public function paginate(int $perPage): CursorPaginator
     {
+        // name is unique (indexed); id keeps the cursor order deterministic.
         return Vendor::query()
             ->orderBy('name')
             ->orderBy('id')
-            ->paginate($perPage);
+            ->cursorPaginate($perPage);
     }
 }

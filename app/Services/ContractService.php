@@ -10,7 +10,7 @@ use App\Exceptions\AssetNotAttachedException;
 use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
 use App\Models\Contract;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 
 final class ContractService implements ContractServiceInterface
 {
@@ -20,12 +20,12 @@ final class ContractService implements ContractServiceInterface
     /** Relations of the detail view: the list ones plus the attached assets. */
     private const DETAIL_RELATIONS = [...self::LIST_RELATIONS, 'assets.assetModel', 'assets.manufacturer'];
 
-    public function paginate(int $perPage): LengthAwarePaginator
+    public function paginate(int $perPage): CursorPaginator
     {
         return Contract::query()
             ->with(self::LIST_RELATIONS)
             ->orderBy('id')
-            ->paginate($perPage);
+            ->cursorPaginate($perPage);
     }
 
     public function get(Contract $contract): Contract
@@ -55,13 +55,13 @@ final class ContractService implements ContractServiceInterface
         $contract->delete();
     }
 
-    public function paginateAssets(Contract $contract, int $perPage, array $includes = []): LengthAwarePaginator
+    public function paginateAssets(Contract $contract, int $perPage, array $includes = []): CursorPaginator
     {
         // Served by the pivot's contract_id index (InnoDB appends the PK: contract_id, asset_id).
         return $contract->assets()
             ->with(AssetInclude::relationsFor($includes))
             ->orderBy('assets.id')
-            ->paginate($perPage);
+            ->cursorPaginate($perPage);
     }
 
     public function attachAsset(Contract $contract, Asset $asset): void

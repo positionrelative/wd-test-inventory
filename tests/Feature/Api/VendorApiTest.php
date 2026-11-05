@@ -22,20 +22,24 @@ final class VendorApiTest extends TestCase
             ->assertOk()
             ->assertExactJsonStructure([
                 'data' => ['*' => ['id', 'name', 'contact_person', 'email', 'phone']],
-                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+                'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
             ])
             ->assertJsonPath('data.*.name', ['Contoso', 'Fabrikam', 'Northwind'])
-            ->assertJsonPath('meta.total', 3);
+            ->assertJsonPath('meta.next_cursor', null);
     }
 
-    public function test_index_is_paginated(): void
+    public function test_index_is_cursor_paginated(): void
     {
         Vendor::factory()->count(3)->create();
 
-        $this->getJson('/api/v1/vendors?per_page=2&page=2')
+        $first = $this->getJson('/api/v1/vendors?per_page=2')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $this->getJson('/api/v1/vendors?per_page=2&cursor=' . $first->json('meta.next_cursor'))
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('meta.current_page', 2);
+            ->assertJsonPath('meta.next_cursor', null);
     }
 
     public function test_index_rejects_invalid_pagination(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Errors;
 
 use App\Exceptions\ApiException;
+use App\Http\Requests\IndexRequest;
 use App\Http\Resources\Error\ErrorResource;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Container\Attributes\Config;
@@ -14,11 +15,13 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Cursor;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
+use UnexpectedValueException;
 
 /**
  * Turns any exception thrown during an API request into the standard error response.
@@ -63,8 +66,20 @@ final class ApiExceptionRenderer
                 'The request violates a data integrity constraint.',
             ),
             $e instanceof HttpExceptionInterface => $this->fromHttpException($e),
+            self::isForeignCursor($e) => new ApiError(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                'validation_failed',
+                'The given data was invalid.',
+                ['cursor' => [IndexRequest::INVALID_CURSOR]],
+            ),
             default => $this->serverError($e),
         };
+    }
+
+    public static function isForeignCursor(Throwable $e): bool
+    {
+        return $e instanceof UnexpectedValueException
+            && ($e->getTrace()[0]['class'] ?? null) === Cursor::class;
     }
 
     private function fromHttpException(HttpExceptionInterface $e): ApiError
@@ -111,7 +126,6 @@ final class ApiExceptionRenderer
         );
     }
 
-    /** SQLSTATE class 23 = integrity constraint violation (FK, unique, not null). */
     private function isIntegrityViolation(QueryException $e): bool
     {
         return str_starts_with((string) $e->getCode(), '23');

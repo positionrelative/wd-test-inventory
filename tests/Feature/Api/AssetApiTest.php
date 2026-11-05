@@ -7,6 +7,7 @@ namespace Tests\Feature\Api;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Contract;
+use App\Models\Manufacturer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -15,20 +16,61 @@ final class AssetApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_index_returns_minimal_rows_with_compact_pagination(): void
+    public function test_index_returns_minimal_rows_with_cursor_pagination(): void
     {
-        Asset::factory()->count(3)->create();
+        $assets = Asset::factory()->count(3)->create();
 
-        $this->getJson('/api/v1/assets?per_page=2')
+        $first = $this->getJson('/api/v1/assets?per_page=2')
             ->assertOk()
             ->assertExactJsonStructure([
                 'data' => ['*' => ['id', 'asset_tag', 'serial_number']],
-                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+                'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
             ])
-            ->assertJsonCount(2, 'data')
-            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('data.*.id', [$assets[0]->id, $assets[1]->id])
             ->assertJsonPath('meta.per_page', 2)
-            ->assertJsonPath('meta.last_page', 2);
+            ->assertJsonPath('meta.prev_cursor', null);
+
+        $second = $this->getJson('/api/v1/assets?per_page=2&cursor=' . $first->json('meta.next_cursor'))
+            ->assertOk()
+            ->assertJsonPath('data.*.id', [$assets[2]->id])
+            ->assertJsonPath('meta.next_cursor', null);
+
+        $this->getJson('/api/v1/assets?per_page=2&cursor=' . $second->json('meta.prev_cursor'))
+            ->assertOk()
+            ->assertJsonPath('data.*.id', [$assets[0]->id, $assets[1]->id]);
+    }
+
+    public function test_index_does_not_count_rows(): void
+    {
+        Asset::factory()->count(3)->create();
+
+        DB::enableQueryLog();
+        $this->getJson('/api/v1/assets')->assertOk();
+        $queries = array_column(DB::getQueryLog(), 'query');
+        DB::disableQueryLog();
+
+        $this->assertEmpty(array_filter($queries, static fn (string $sql) => stripos($sql, 'count(') !== false));
+        $this->assertEmpty(array_filter($queries, static fn (string $sql) => stripos($sql, 'offset') !== false));
+    }
+
+    public function test_index_rejects_invalid_cursor(): void
+    {
+        $this->getJson('/api/v1/assets?cursor=not-a-cursor')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.errors.cursor.0', 'The cursor is invalid.');
+    }
+
+    public function test_cursor_missing_a_sort_column_is_rejected(): void
+    {
+        Asset::factory()->count(2)->create();
+        Manufacturer::factory()->create();
+        // The asset list sorts by id only; the manufacturer list needs (name, id).
+        $assetCursor = $this->getJson('/api/v1/assets?per_page=1')->json('meta.next_cursor');
+
+        $this->getJson("/api/v1/manufacturers?cursor={$assetCursor}")
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonPath('error.errors.cursor.0', 'The cursor is invalid.');
     }
 
     public function test_index_includes_model_and_manufacturer_as_sibling_objects(): void
@@ -46,7 +88,7 @@ final class AssetApiTest extends TestCase
                     'model' => ['id', 'name', 'model_number'],
                     'manufacturer' => ['id', 'name'],
                 ]],
-                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+                'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
             ])
             ->assertJsonPath('data.0.model', [
                 'id' => $model->id,
@@ -67,7 +109,7 @@ final class AssetApiTest extends TestCase
             ->assertOk()
             ->assertExactJsonStructure([
                 'data' => ['*' => ['id', 'asset_tag', 'serial_number', 'manufacturer' => ['id', 'name']]],
-                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+                'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
             ]);
     }
 
@@ -80,7 +122,7 @@ final class AssetApiTest extends TestCase
         $queries = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        // count + assets + asset_models + manufacturers (+ traffic log insert), regardless of row count
+        // assets + asset_models + manufacturers (+ traffic log insert), regardless of row count
         $this->assertLessThanOrEqual(5, $queries);
     }
 

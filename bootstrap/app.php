@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Expected domain errors are part of the API contract, not application failures.
         $exceptions->dontReport(ApiException::class);
+        $exceptions->dontReportWhen(ApiExceptionRenderer::isForeignCursor(...));
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api', 'api/*') || $request->expectsJson(),

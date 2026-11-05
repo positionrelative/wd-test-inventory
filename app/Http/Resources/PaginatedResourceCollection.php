@@ -6,11 +6,13 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\AbstractCursorPaginator;
+use Illuminate\Support\Arr;
 
 /**
- * Compact pagination: {"data": [...], "meta": {current_page, per_page, total, last_page}}.
- * The navigation URLs ("links", "meta.links") are left out; the client builds
- * them from page and last_page.
+ * Compact pagination meta, without the navigation URLs ("links", "meta.links"):
+ * - cursor paginator: {"meta": {per_page, next_cursor, prev_cursor}}; next page: ?cursor=<next_cursor>
+ * - length-aware paginator: {"meta": {current_page, per_page, total, last_page}}
  */
 final class PaginatedResourceCollection extends AnonymousResourceCollection
 {
@@ -21,13 +23,12 @@ final class PaginatedResourceCollection extends AnonymousResourceCollection
      */
     public function paginationInformation(Request $request, array $paginated, array $default): array
     {
+        $fields = $this->resource instanceof AbstractCursorPaginator
+            ? ['per_page', 'next_cursor', 'prev_cursor']
+            : ['current_page', 'per_page', 'total', 'last_page'];
+
         return [
-            'meta' => [
-                'current_page' => $paginated['current_page'],
-                'per_page' => $paginated['per_page'],
-                'total' => $paginated['total'],
-                'last_page' => $paginated['last_page'],
-            ],
+            'meta' => Arr::only($paginated, $fields),
         ];
     }
 }
