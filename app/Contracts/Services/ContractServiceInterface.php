@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts\Services;
 
 use App\Enums\AssetInclude;
+use App\Exceptions\AssetAlreadyAttachedException;
 use App\Exceptions\AssetNotAttachedException;
 use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
@@ -40,7 +41,7 @@ interface ContractServiceInterface
 
     public function countAssets(Contract $contract): int;
 
-    /** Idempotent: attaching an already attached asset changes nothing. */
+    /** @throws AssetAlreadyAttachedException When the asset is already on the contract. */
     public function attachAsset(Contract $contract, Asset $asset): void;
 
     /** @throws AssetNotAttachedException When the asset is not on the contract. */

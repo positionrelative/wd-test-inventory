@@ -6,8 +6,8 @@ namespace App\Http\Requests;
 
 use App\Models\Contract;
 use App\Models\Vendor;
-use App\Rules\UniqueContractNumberPerVendor;
 use App\Rules\DateRangeBounds;
+use App\Rules\UniqueTogether;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -36,8 +36,10 @@ final class ContractRequest extends FormRequest
 
         return [
             'title' => [$presence, 'string', 'max:100'],
+            /** Unique per vendor. */
             'contract_number' => [$presence, 'string', 'max:100'],
             'start_date' => [$presence, 'date_format:' . self::DATE_FORMAT, ...$dates->start()],
+            /** Not before `start_date`. */
             'end_date' => [$presence, 'date_format:' . self::DATE_FORMAT, ...$dates->end()],
             'vendor_id' => [$presence, 'integer', Rule::exists(Vendor::class, 'id')],
         ];
@@ -46,7 +48,13 @@ final class ContractRequest extends FormRequest
     /** @return list<callable(Validator): void> */
     public function after(): array
     {
-        return [new UniqueContractNumberPerVendor($this->contract())];
+        return [new UniqueTogether(
+            Contract::class,
+            'vendor_id',
+            'contract_number',
+            $this->contract(),
+            'The contract number has already been taken for this vendor.',
+        )];
     }
 
     private function contract(): ?Contract

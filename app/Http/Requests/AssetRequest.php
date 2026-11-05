@@ -23,7 +23,9 @@ final class AssetRequest extends FormRequest
         $presence = $asset === null ? 'required' : 'sometimes';
 
         return [
+            /** Unique. */
             'asset_tag' => [$presence, 'string', 'max:100', Rule::unique(Asset::class)->ignore($asset)],
+            /** Unique when given. */
             'serial_number' => ['nullable', 'string', 'max:100', Rule::unique(Asset::class)->ignore($asset)],
             'model_id' => [$presence, 'integer', Rule::exists(AssetModel::class, 'id')],
         ];

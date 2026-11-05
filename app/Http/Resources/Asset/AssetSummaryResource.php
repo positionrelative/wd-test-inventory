@@ -27,8 +27,11 @@ final class AssetSummaryResource extends ApiResource
             'id' => $this->id,
             'asset_tag' => $this->asset_tag,
             'serial_number' => $this->serial_number,
+            /** Only with `?include=model`. */
             'model' => AssetModelResource::make($this->whenLoaded('assetModel')),
+            /** Only with `?include=manufacturer`. */
             'manufacturer' => ManufacturerResource::make($this->whenLoaded('manufacturer')),
+            /** Only with `?include=contracts`. */
             'contracts' => ContractSummaryResource::collection($this->whenLoaded('contracts')),
         ];
     }

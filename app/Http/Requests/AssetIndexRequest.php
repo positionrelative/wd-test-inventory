@@ -14,6 +14,11 @@ final class AssetIndexRequest extends IndexRequest
     {
         return [
             ...parent::rules(),
+            /**
+             * Comma separated: `model`, `manufacturer`, `contracts`.
+             *
+             * @example model,manufacturer
+             */
             'include' => ['sometimes', 'bail', 'string', new KnownIncludes(AssetInclude::values())],
         ];
     }

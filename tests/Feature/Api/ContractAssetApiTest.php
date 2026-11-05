@@ -57,25 +57,43 @@ final class ContractAssetApiTest extends TestCase
             ->assertJsonPath('error.message', 'Contract not found.');
     }
 
-    public function test_attach_adds_asset(): void
+    public function test_attach_returns_201_with_the_asset(): void
     {
         $contract = Contract::factory()->create();
         $asset = Asset::factory()->create();
 
-        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset->id}")->assertNoContent();
+        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset->id}")
+            ->assertCreated()
+            ->assertExactJson(['data' => [
+                'id' => $asset->id,
+                'asset_tag' => $asset->asset_tag,
+                'serial_number' => $asset->serial_number,
+            ]]);
 
         $this->assertDatabaseHas('asset_contract', ['contract_id' => $contract->id, 'asset_id' => $asset->id]);
     }
 
-    public function test_attach_is_idempotent(): void
+    public function test_duplicate_attach_returns_409(): void
     {
         $contract = Contract::factory()->create();
         $asset = Asset::factory()->create();
 
-        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset->id}")->assertNoContent();
-        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset->id}")->assertNoContent();
+        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset->id}")->assertCreated();
+        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset->id}")
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'asset_already_attached')
+            ->assertJsonPath('error.message', "Asset #{$asset->id} is already attached to contract #{$contract->id}.");
 
         $this->assertDatabaseCount('asset_contract', 1);
+    }
+
+    public function test_same_asset_can_be_attached_to_another_contract(): void
+    {
+        $asset = Asset::factory()->create();
+        [$first, $second] = Contract::factory()->count(2)->create();
+
+        $this->putJson("/api/v1/contracts/{$first->id}/assets/{$asset->id}")->assertCreated();
+        $this->putJson("/api/v1/contracts/{$second->id}/assets/{$asset->id}")->assertCreated();
     }
 
     public function test_attach_unknown_asset_returns_404(): void

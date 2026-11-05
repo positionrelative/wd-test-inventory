@@ -23,7 +23,7 @@ final class CountResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'count' => $this->resource,
+            'count' => (int) $this->resource,
         ];
     }
 }

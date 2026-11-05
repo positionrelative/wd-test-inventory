@@ -21,7 +21,9 @@ class IndexRequest extends FormRequest
     public function rules(): array
     {
         return [
+            /** @default 15 */
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:' . self::MAX_PER_PAGE],
+            /** `meta.next_cursor` or `meta.prev_cursor` of the previous page. */
             'cursor' => ['sometimes', 'bail', 'string', 'max:1024', new DecodableCursor()],
         ];
     }

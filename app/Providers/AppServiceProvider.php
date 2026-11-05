@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Contracts\Logging\ApiTrafficLoggerInterface;
+use App\Contracts\Services\AssetModelServiceInterface;
 use App\Contracts\Services\AssetServiceInterface;
 use App\Contracts\Services\ContractServiceInterface;
 use App\Contracts\Services\ManufacturerServiceInterface;
 use App\Contracts\Services\VendorServiceInterface;
+use App\Services\AssetModelService;
 use App\Services\AssetService;
 use App\Services\ContractService;
 use App\Services\ManufacturerService;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public array $bindings = [
         AssetServiceInterface::class => AssetService::class,
+        AssetModelServiceInterface::class => AssetModelService::class,
         ContractServiceInterface::class => ContractService::class,
         ManufacturerServiceInterface::class => ManufacturerService::class,
         VendorServiceInterface::class => VendorService::class,

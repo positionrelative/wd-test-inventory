@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources\AssetModel;
 
 use App\Http\Resources\ApiResource;
+use App\Http\Resources\Manufacturer\ManufacturerResource;
 use App\Models\AssetModel;
 use Illuminate\Http\Request;
 
@@ -18,6 +19,8 @@ final class AssetModelResource extends ApiResource
             'id' => $this->id,
             'name' => $this->name,
             'model_number' => $this->model_number,
+            /** Only on the asset model endpoints. */
+            'manufacturer' => ManufacturerResource::make($this->whenLoaded('manufacturer')),
         ];
     }
 }

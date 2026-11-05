@@ -28,6 +28,7 @@ final class AssetResource extends ApiResource
             'model' => AssetModelResource::make($this->whenLoaded('assetModel')),
             'manufacturer' => ManufacturerResource::make($this->whenLoaded('manufacturer')),
             'contracts' => ContractSummaryResource::collection($this->whenLoaded('contracts')),
+            /** Only inside a contract. */
             'attached_at' => $this->whenPivotLoaded('asset_contract', fn () => $this->pivot->created_at),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

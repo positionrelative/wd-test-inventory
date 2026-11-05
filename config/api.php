@@ -26,4 +26,18 @@ return [
 
     'count_cache_ttl' => (int) env('API_COUNT_CACHE_TTL', 60),
 
+    /*
+    |--------------------------------------------------------------------------
+    | API documentation (Scramble: /docs/api, /docs/api.json)
+    |--------------------------------------------------------------------------
+    |
+    | Protected by HTTP Basic Auth. Without both values the docs return 401.
+    |
+    */
+
+    'docs' => [
+        'username' => env('API_DOCS_USERNAME'),
+        'password' => env('API_DOCS_PASSWORD'),
+    ],
+
 ];

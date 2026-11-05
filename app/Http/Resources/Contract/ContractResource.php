@@ -24,6 +24,7 @@ final class ContractResource extends ApiResource
             'end_date' => $this->end_date->toDateString(),
             'vendor_id' => $this->vendor_id,
             'vendor' => VendorResource::make($this->whenLoaded('vendor')),
+            /** Only in the contract detail. */
             'assets' => AssetResource::collection($this->whenLoaded('assets')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

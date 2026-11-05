@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Contracts\Services\ContractServiceInterface;
 use App\Enums\AssetInclude;
+use App\Exceptions\AssetAlreadyAttachedException;
 use App\Exceptions\AssetNotAttachedException;
 use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
@@ -92,11 +93,15 @@ final class ContractService implements ContractServiceInterface
 
     public function attachAsset(Contract $contract, Asset $asset): void
     {
+        // A single statement decides: nothing attached means the link already existed.
+        // Concurrent duplicates are stopped by the pivot's primary key (→ 409 conflict).
         $changes = $contract->assets()->syncWithoutDetaching([$asset->getKey()]);
 
-        if ($changes['attached'] !== []) {
-            $this->counter->forget($this->assetsCountKey($contract));
+        if ($changes['attached'] === []) {
+            throw AssetAlreadyAttachedException::for($contract, $asset);
         }
+
+        $this->counter->forget($this->assetsCountKey($contract));
     }
 
     public function detachAsset(Contract $contract, Asset $asset): void

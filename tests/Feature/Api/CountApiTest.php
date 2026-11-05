@@ -77,7 +77,7 @@ final class CountApiTest extends TestCase
         $contract = Contract::factory()->create();
         $this->getJson("/api/v1/contracts/{$contract->id}/assets/count")->assertExactJson(['data' => ['count' => 0]]);
 
-        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset}")->assertNoContent();
+        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset}")->assertCreated();
         $this->getJson("/api/v1/contracts/{$contract->id}/assets/count")->assertExactJson(['data' => ['count' => 1]]);
 
         $this->deleteJson("/api/v1/contracts/{$contract->id}/assets/{$asset}")->assertNoContent();

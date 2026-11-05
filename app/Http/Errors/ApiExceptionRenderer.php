@@ -88,9 +88,10 @@ final class ApiExceptionRenderer
         $previous = $e instanceof Throwable ? $e->getPrevious() : null;
 
         $message = match (true) {
+            // "AssetModel" → "Asset model not found."
             $previous instanceof ModelNotFoundException => sprintf(
                 '%s not found.',
-                class_basename($previous->getModel()),
+                Str::ucfirst(Str::snake(class_basename($previous->getModel()), ' ')),
             ),
             $status === Response::HTTP_NOT_FOUND => 'The requested resource was not found.',
             $status < Response::HTTP_INTERNAL_SERVER_ERROR && $e instanceof Throwable && $e->getMessage() !== ''
