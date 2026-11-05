@@ -8,6 +8,7 @@
         "php": "^8.5",
         "dedoc/scramble": "^0.13.53",
         "laravel/framework": "^13.17",
+        "laravel/pulse": "^1.8",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {
@@ -41,6 +42,10 @@
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
+        ],
+        "test:coverage": [
+            "@php artisan config:clear --ansi @no_additional_args",
+            "@php artisan test --coverage-clover=build/coverage/clover.xml --log-junit=build/junit.xml"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

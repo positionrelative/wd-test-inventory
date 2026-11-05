@@ -10,14 +10,15 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * HTTP Basic Auth in front of the API documentation (/docs/api, /docs/api.json).
+ * HTTP Basic Auth in front of the internal tools: API documentation (/docs/api)
+ * and the Pulse dashboard (/pulse).
  *
  * Credentials come from config (api.docs.*, i.e. API_DOCS_USERNAME / API_DOCS_PASSWORD).
- * When they are not configured, the docs stay closed: no default credentials.
+ * When they are not configured, the tools stay closed: no default credentials.
  */
-final class DocsBasicAuth
+final class InternalToolsBasicAuth
 {
-    private const REALM = 'API documentation';
+    private const REALM = 'Internal tools';
 
     public function __construct(
         #[Config('api.docs.username')]

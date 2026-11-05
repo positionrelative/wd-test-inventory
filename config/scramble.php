@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middleware\DocsBasicAuth;
+use App\Http\Middleware\InternalToolsBasicAuth;
 use App\OpenApi\Extensions\ApiErrorResponses;
 use App\OpenApi\Extensions\ApiOperationConventions;
 
@@ -171,7 +171,7 @@ return [
     // Basic Auth instead of the default RestrictedDocsAccess (local env only), see config/api.php "docs".
     'middleware' => [
         'web',
-        DocsBasicAuth::class,
+        InternalToolsBasicAuth::class,
     ],
 
     // Registered after the built-in ones, so they take precedence (see App\OpenApi).

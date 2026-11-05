@@ -6,7 +6,8 @@ ARG GID=1000
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
-RUN install-php-extensions pdo_mysql bcmath intl zip \
+# pcov: code coverage for the test suite (SonarQube coverage report)
+RUN install-php-extensions pdo_mysql bcmath intl zip pcov \
     && apk add --no-cache git unzip \
     && cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 

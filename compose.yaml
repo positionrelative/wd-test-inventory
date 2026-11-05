@@ -21,6 +21,12 @@ services:
     command: php artisan schedule:work
     restart: unless-stopped
 
+  # Pulse server stats (CPU, memory, disk) for the /pulse dashboard.
+  pulse:
+    <<: *php
+    command: php artisan pulse:check
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.29-alpine
     ports:
@@ -48,5 +54,39 @@ services:
       timeout: 5s
       retries: 20
 
+  # Code quality, only with the "sonar" profile:
+  #   docker compose --profile sonar up -d sonarqube        → http://localhost:9000
+  #   docker compose --profile sonar run --rm sonar-scanner  (after composer test:coverage)
+  sonarqube:
+    image: sonarqube:community
+    profiles: [sonar]
+    ports:
+      - "127.0.0.1:${SONAR_PORT:-9000}:9000"
+    environment:
+      # Dev setup: no vm.max_map_count tuning needed on the host.
+      SONAR_SEARCH_JAVAADDITIONALOPTS: "-Dnode.store.allow_mmap=false"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli
+    profiles: [sonar]
+    user: "${UID:-1000}:${GID:-1000}"
+    # Same path as in the app container, so the coverage report's file paths match.
+    working_dir: /var/www/html
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+      SONAR_TOKEN: ${SONAR_TOKEN:-}
+      SONAR_USER_HOME: /var/www/html/.scannerwork/cache
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - sonarqube
+
 volumes:
   mysql-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:

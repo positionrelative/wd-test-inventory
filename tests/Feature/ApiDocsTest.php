@@ -23,7 +23,7 @@ final class ApiDocsTest extends TestCase
         foreach (['/docs/api', '/docs/api.json'] as $url) {
             $this->get($url)
                 ->assertUnauthorized()
-                ->assertHeader('WWW-Authenticate', 'Basic realm="API documentation", charset="UTF-8"');
+                ->assertHeader('WWW-Authenticate', 'Basic realm="Internal tools", charset="UTF-8"');
         }
     }
 

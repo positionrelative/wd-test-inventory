@@ -31,10 +31,10 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | API documentation (Scramble: /docs/api, /docs/api.json)
+    | Internal tools: API documentation (/docs/api) and Pulse (/pulse)
     |--------------------------------------------------------------------------
     |
-    | Protected by HTTP Basic Auth. Without both values the docs return 401.
+    | Protected by HTTP Basic Auth. Without both values they return 401.
     |
     */
 
