@@ -16,8 +16,8 @@ class ExampleTest extends TestCase
         $this->getJson('/api/v1/ping')->assertNotFound();
     }
 
-    public function test_frontend_page_loads(): void
+    public function test_root_has_no_frontend_page(): void
     {
-        $this->withoutVite()->get('/')->assertOk();
+        $this->getJson('/')->assertNotFound();
     }
 }

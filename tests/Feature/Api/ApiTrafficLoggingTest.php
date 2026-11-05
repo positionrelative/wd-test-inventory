@@ -120,7 +120,7 @@ final class ApiTrafficLoggingTest extends TestCase
 
     public function test_non_api_requests_are_not_logged(): void
     {
-        $this->withoutVite()->get('/')->assertOk();
+        $this->get('/up')->assertOk();
 
         $this->assertDatabaseCount('api_request_logs', 0);
     }
