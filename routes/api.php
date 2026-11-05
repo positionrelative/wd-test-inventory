@@ -12,6 +12,11 @@ Route::get('/ping', fn () => response()->json([
     'time' => now()->toIso8601String(),
 ]));
 
+Route::get('assets/count', [AssetController::class, 'count'])->name('assets.count');
+Route::get('contracts/count', [ContractController::class, 'count'])->name('contracts.count');
+Route::get('manufacturers/count', [ManufacturerController::class, 'count'])->name('manufacturers.count');
+Route::get('vendors/count', [VendorController::class, 'count'])->name('vendors.count');
+
 Route::apiResource('assets', AssetController::class);
 Route::apiResource('contracts', ContractController::class);
 Route::apiResource('manufacturers', ManufacturerController::class)->only('index');
@@ -22,6 +27,7 @@ Route::controller(ContractAssetController::class)
     ->name('contracts.assets.')
     ->group(function (): void {
         Route::get('/', 'index')->name('index');
+        Route::get('/count', 'count')->name('count');
         Route::put('/{asset}', 'attach')->name('attach');
         Route::delete('/{asset}', 'detach')->name('detach');
     });

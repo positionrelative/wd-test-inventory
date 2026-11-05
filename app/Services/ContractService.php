@@ -10,6 +10,7 @@ use App\Exceptions\AssetNotAttachedException;
 use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
 use App\Models\Contract;
+use App\Services\Support\CachedCounter;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 
 final class ContractService implements ContractServiceInterface
@@ -20,12 +21,24 @@ final class ContractService implements ContractServiceInterface
     /** Relations of the detail view: the list ones plus the attached assets. */
     private const DETAIL_RELATIONS = [...self::LIST_RELATIONS, 'assets.assetModel', 'assets.manufacturer'];
 
+    private const COUNT_KEY = 'contracts';
+
+    public function __construct(
+        private readonly CachedCounter $counter,
+    ) {
+    }
+
     public function paginate(int $perPage): CursorPaginator
     {
         return Contract::query()
             ->with(self::LIST_RELATIONS)
             ->orderBy('id')
             ->cursorPaginate($perPage);
+    }
+
+    public function count(): int
+    {
+        return $this->counter->remember(self::COUNT_KEY, static fn () => Contract::query()->count());
     }
 
     public function get(Contract $contract): Contract
@@ -35,7 +48,10 @@ final class ContractService implements ContractServiceInterface
 
     public function create(array $attributes): Contract
     {
-        return $this->get(Contract::query()->create($attributes));
+        $contract = Contract::query()->create($attributes);
+        $this->counter->forget(self::COUNT_KEY);
+
+        return $this->get($contract);
     }
 
     public function update(Contract $contract, array $attributes): Contract
@@ -53,6 +69,8 @@ final class ContractService implements ContractServiceInterface
         }
 
         $contract->delete();
+        $this->counter->forget(self::COUNT_KEY);
+        $this->counter->forget($this->assetsCountKey($contract));
     }
 
     public function paginateAssets(Contract $contract, int $perPage, array $includes = []): CursorPaginator
@@ -64,9 +82,21 @@ final class ContractService implements ContractServiceInterface
             ->cursorPaginate($perPage);
     }
 
+    public function countAssets(Contract $contract): int
+    {
+        return $this->counter->remember(
+            $this->assetsCountKey($contract),
+            static fn () => $contract->assets()->count(),
+        );
+    }
+
     public function attachAsset(Contract $contract, Asset $asset): void
     {
-        $contract->assets()->syncWithoutDetaching([$asset->getKey()]);
+        $changes = $contract->assets()->syncWithoutDetaching([$asset->getKey()]);
+
+        if ($changes['attached'] !== []) {
+            $this->counter->forget($this->assetsCountKey($contract));
+        }
     }
 
     public function detachAsset(Contract $contract, Asset $asset): void
@@ -74,5 +104,12 @@ final class ContractService implements ContractServiceInterface
         if ($contract->assets()->detach($asset->getKey()) === 0) {
             throw AssetNotAttachedException::for($contract, $asset);
         }
+
+        $this->counter->forget($this->assetsCountKey($contract));
+    }
+
+    private function assetsCountKey(Contract $contract): string
+    {
+        return "contracts.{$contract->getKey()}.assets";
     }
 }

@@ -16,6 +16,8 @@ interface ContractServiceInterface
     /** @return CursorPaginator<int, Contract> List view: without assets, cursor paginated. */
     public function paginate(int $perPage): CursorPaginator;
 
+    public function count(): int;
+
     /** @return Contract with its assets, for the detail view. */
     public function get(Contract $contract): Contract;
 
@@ -35,6 +37,8 @@ interface ContractServiceInterface
      * @return CursorPaginator<int, Asset>
      */
     public function paginateAssets(Contract $contract, int $perPage, array $includes = []): CursorPaginator;
+
+    public function countAssets(Contract $contract): int;
 
     /** Idempotent: attaching an already attached asset changes nothing. */
     public function attachAsset(Contract $contract, Asset $asset): void;

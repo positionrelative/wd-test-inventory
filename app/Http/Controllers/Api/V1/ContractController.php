@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ContractRequest;
 use App\Http\Requests\IndexRequest;
 use App\Http\Resources\Contract\ContractResource;
+use App\Http\Resources\CountResource;
 use App\Models\Contract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -24,6 +25,11 @@ final class ContractController extends Controller
     public function index(IndexRequest $request): AnonymousResourceCollection
     {
         return ContractResource::collection($this->contracts->paginate($request->perPage()));
+    }
+
+    public function count(): CountResource
+    {
+        return new CountResource($this->contracts->count());
     }
 
     public function store(ContractRequest $request): JsonResponse

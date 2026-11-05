@@ -17,6 +17,9 @@ interface AssetServiceInterface
      */
     public function paginate(int $perPage, array $includes = []): CursorPaginator;
 
+    /** @return int Number of assets. */
+    public function count(): int;
+
     /** Detail view: model, manufacturer and contracts loaded. */
     public function get(Asset $asset): Asset;
 

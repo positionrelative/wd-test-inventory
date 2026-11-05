@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Contracts\Services\ManufacturerServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\IndexRequest;
+use App\Http\Resources\CountResource;
 use App\Http\Resources\Manufacturer\ManufacturerResource;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -20,5 +21,10 @@ final class ManufacturerController extends Controller
     public function index(IndexRequest $request): AnonymousResourceCollection
     {
         return ManufacturerResource::collection($this->manufacturers->paginate($request->perPage()));
+    }
+
+    public function count(): CountResource
+    {
+        return new CountResource($this->manufacturers->count());
     }
 }

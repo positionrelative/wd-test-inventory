@@ -11,4 +11,7 @@ interface ManufacturerServiceInterface
 {
     /** @return CursorPaginator<int, Manufacturer> Ordered by name, cursor paginated. */
     public function paginate(int $perPage): CursorPaginator;
+
+    /** Number of manufacturers (cached, see config api.count_cache_ttl). */
+    public function count(): int;
 }

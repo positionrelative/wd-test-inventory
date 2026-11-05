@@ -10,6 +10,7 @@ use App\Http\Requests\AssetIndexRequest;
 use App\Http\Requests\AssetRequest;
 use App\Http\Resources\Asset\AssetResource;
 use App\Http\Resources\Asset\AssetSummaryResource;
+use App\Http\Resources\CountResource;
 use App\Models\Asset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -28,6 +29,11 @@ final class AssetController extends Controller
         return AssetSummaryResource::collection(
             $this->assets->paginate($request->perPage(), $request->includes()),
         );
+    }
+
+    public function count(): CountResource
+    {
+        return new CountResource($this->assets->count());
     }
 
     public function store(AssetRequest $request): JsonResponse

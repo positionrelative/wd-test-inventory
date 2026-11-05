@@ -8,6 +8,7 @@ use App\Contracts\Services\ContractServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetIndexRequest;
 use App\Http\Resources\Asset\AssetSummaryResource;
+use App\Http\Resources\CountResource;
 use App\Models\Asset;
 use App\Models\Contract;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -28,6 +29,11 @@ final class ContractAssetController extends Controller
         return AssetSummaryResource::collection(
             $this->contracts->paginateAssets($contract, $request->perPage(), $request->includes()),
         );
+    }
+
+    public function count(Contract $contract): CountResource
+    {
+        return new CountResource($this->contracts->countAssets($contract));
     }
 
     /** PUT: attach the asset (idempotent). */
