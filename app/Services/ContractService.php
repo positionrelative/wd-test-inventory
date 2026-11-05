@@ -12,20 +12,22 @@ use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
 use App\Models\Contract;
 use App\Services\Support\CachedCounter;
+use Illuminate\Container\Attributes\Config;
 use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 final class ContractService implements ContractServiceInterface
 {
     /** Relations of the list view. */
     private const LIST_RELATIONS = ['vendor'];
 
-    /** Relations of the detail view: the list ones plus the attached assets. */
-    private const DETAIL_RELATIONS = [...self::LIST_RELATIONS, 'assets.assetModel', 'assets.manufacturer'];
-
     private const COUNT_KEY = 'contracts';
 
     public function __construct(
         private readonly CachedCounter $counter,
+        #[Config('api.contract_assets_preview', 15)]
+        private readonly int $assetsPreview = 15,
     ) {
     }
 
@@ -42,9 +44,21 @@ final class ContractService implements ContractServiceInterface
         return $this->counter->remember(self::COUNT_KEY, static fn () => Contract::query()->count());
     }
 
+    /**
+     * Detail view: vendor, the number of assets and only the first few of them,
+     * so the response stays bounded for contracts with many assets.
+     */
     public function get(Contract $contract): Contract
     {
-        return $contract->load(self::DETAIL_RELATIONS);
+        return $contract
+            ->load([
+                ...self::LIST_RELATIONS,
+                'assets' => fn (BelongsToMany $query) => $query
+                    ->with(['assetModel', 'manufacturer'])
+                    ->orderBy('assets.id')
+                    ->limit($this->assetsPreview),
+            ])
+            ->loadCount('assets');
     }
 
     public function create(array $attributes): Contract
@@ -93,11 +107,14 @@ final class ContractService implements ContractServiceInterface
 
     public function attachAsset(Contract $contract, Asset $asset): void
     {
-        // A single statement decides: nothing attached means the link already existed.
-        // Concurrent duplicates are stopped by the pivot's primary key (→ 409 conflict).
-        $changes = $contract->assets()->syncWithoutDetaching([$asset->getKey()]);
-
-        if ($changes['attached'] === []) {
+        // Plain INSERT, no read of the existing links: the pivot's primary key
+        // (asset_id, contract_id) rejects duplicates, concurrent ones included.
+        // The savepoint keeps an outer transaction usable after the violation.
+        try {
+            $contract->getConnection()->transaction(
+                static fn () => $contract->assets()->attach($asset->getKey()),
+            );
+        } catch (UniqueConstraintViolationException) {
             throw AssetAlreadyAttachedException::for($contract, $asset);
         }
 

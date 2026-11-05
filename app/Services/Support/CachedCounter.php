@@ -7,6 +7,7 @@ namespace App\Services\Support;
 use Closure;
 use Illuminate\Container\Attributes\Config;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\Str;
 
 /**
  * Caches COUNT(*) results: under heavy load a full count on every request is
@@ -16,6 +17,8 @@ use Illuminate\Contracts\Cache\Repository;
 final class CachedCounter
 {
     private const PREFIX = 'count:';
+
+    private const GENERATION_TTL = 86400;
 
     public function __construct(
         private readonly Repository $cache,
@@ -27,11 +30,32 @@ final class CachedCounter
     /** @param Closure(): int $count */
     public function remember(string $key, Closure $count): int
     {
-        return (int) $this->cache->remember(self::PREFIX . $key, $this->ttl, $count);
+        return (int) $this->cache->remember($this->valueKey($key), $this->ttl, $count);
     }
 
     public function forget(string $key): void
     {
-        $this->cache->forget(self::PREFIX . $key);
+        $this->cache->put($this->generationKey($key), $this->newGeneration(), self::GENERATION_TTL);
+    }
+
+    private function valueKey(string $key): string
+    {
+        $generation = $this->cache->remember(
+            $this->generationKey($key),
+            self::GENERATION_TTL,
+            $this->newGeneration(...),
+        );
+
+        return self::PREFIX . $key . ':' . $generation;
+    }
+
+    private function generationKey(string $key): string
+    {
+        return self::PREFIX . $key . ':generation';
+    }
+
+    private function newGeneration(): string
+    {
+        return Str::random(16);
     }
 }

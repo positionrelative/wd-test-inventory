@@ -26,6 +26,9 @@ return [
 
     'count_cache_ttl' => (int) env('API_COUNT_CACHE_TTL', 60),
 
+    // Assets embedded in a contract detail; the rest via GET /contracts/{contract}/assets.
+    'contract_assets_preview' => (int) env('API_CONTRACT_ASSETS_PREVIEW', 15),
+
     /*
     |--------------------------------------------------------------------------
     | API documentation (Scramble: /docs/api, /docs/api.json)

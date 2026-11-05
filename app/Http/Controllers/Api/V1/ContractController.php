@@ -64,8 +64,8 @@ final class ContractController extends Controller
     /**
      * Get a contract
      *
-     * The contract with its vendor and all of its assets. For contracts with many
-     * assets prefer the paginated `GET /contracts/{contract}/assets`.
+     * The contract with its vendor, the number of its assets (`assets_count`) and the
+     * first 15 of them. All assets, paginated: `GET /contracts/{contract}/assets`.
      */
     public function show(Contract $contract): ContractResource
     {

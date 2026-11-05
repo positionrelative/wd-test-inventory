@@ -33,6 +33,8 @@ final class AssetSummaryResource extends ApiResource
             'manufacturer' => ManufacturerResource::make($this->whenLoaded('manufacturer')),
             /** Only with `?include=contracts`. */
             'contracts' => ContractSummaryResource::collection($this->whenLoaded('contracts')),
+            /** Only in a contract's asset list: when the asset was attached. */
+            'attached_at' => $this->whenPivotLoaded('asset_contract', fn () => $this->pivot->created_at),
         ];
     }
 }

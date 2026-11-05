@@ -7,6 +7,7 @@ namespace Tests\Feature\Api;
 use App\Models\Asset;
 use App\Models\Contract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class ContractAssetApiTest extends TestCase
@@ -22,7 +23,7 @@ final class ContractAssetApiTest extends TestCase
         $first = $this->getJson("/api/v1/contracts/{$contract->id}/assets?per_page=2")
             ->assertOk()
             ->assertExactJsonStructure([
-                'data' => ['*' => ['id', 'asset_tag', 'serial_number']],
+                'data' => ['*' => ['id', 'asset_tag', 'serial_number', 'attached_at']],
                 'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
             ])
             ->assertJsonCount(2, 'data')
@@ -85,6 +86,23 @@ final class ContractAssetApiTest extends TestCase
             ->assertJsonPath('error.message', "Asset #{$asset->id} is already attached to contract #{$contract->id}.");
 
         $this->assertDatabaseCount('asset_contract', 1);
+    }
+
+    public function test_attach_does_not_read_the_existing_links(): void
+    {
+        $contract = Contract::factory()->create();
+        $contract->assets()->attach(Asset::factory()->count(3)->create());
+        $asset = Asset::factory()->create();
+
+        DB::enableQueryLog();
+        $this->putJson("/api/v1/contracts/{$contract->id}/assets/{$asset->id}")->assertCreated();
+        $pivotReads = array_filter(
+            array_column(DB::getQueryLog(), 'query'),
+            static fn (string $sql) => stripos($sql, 'select') === 0 && str_contains($sql, 'asset_contract'),
+        );
+        DB::disableQueryLog();
+
+        $this->assertSame([], array_values($pivotReads));
     }
 
     public function test_same_asset_can_be_attached_to_another_contract(): void

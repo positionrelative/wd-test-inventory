@@ -34,19 +34,33 @@ final class ContractApiTest extends TestCase
         $assets = Asset::factory()->count(2)->create();
         $contract->assets()->attach($assets);
 
-        $this->getJson("/api/v1/contracts/{$contract->id}")
+        $response = $this->getJson("/api/v1/contracts/{$contract->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $contract->id)
             ->assertJsonPath('data.start_date', $contract->start_date->toDateString())
             ->assertJsonPath('data.vendor.id', $contract->vendor_id)
-            ->assertJsonCount(2, 'data.assets')
-            ->assertJsonStructure(['data' => ['assets' => ['*' => [
-                'id',
-                'asset_tag',
-                'model' => ['id', 'name', 'model_number'],
-                'manufacturer' => ['id', 'name'],
-                'attached_at',
-            ]]]]);
+            ->assertJsonMissingPath('data.vendor_id')
+            ->assertJsonPath('data.assets_count', 2)
+            ->assertJsonCount(2, 'data.assets');
+
+        // Compact asset rows: no timestamps.
+        $this->assertSame(
+            ['id', 'asset_tag', 'serial_number', 'model', 'manufacturer', 'attached_at'],
+            array_keys($response->json('data.assets.0')),
+        );
+    }
+
+    public function test_show_embeds_only_the_first_assets_but_counts_all(): void
+    {
+        config(['api.contract_assets_preview' => 3]);
+        $contract = Contract::factory()->create();
+        $assets = Asset::factory()->count(5)->create();
+        $contract->assets()->attach($assets);
+
+        $this->getJson("/api/v1/contracts/{$contract->id}")
+            ->assertOk()
+            ->assertJsonPath('data.assets_count', 5)
+            ->assertJsonPath('data.assets.*.id', $assets->take(3)->pluck('id')->all());
     }
 
     public function test_store_creates_contract(): void
@@ -63,6 +77,7 @@ final class ContractApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.contract_number', 'CN-1')
             ->assertJsonPath('data.end_date', '2026-12-31')
+            ->assertJsonPath('data.assets_count', 0)
             ->assertJsonPath('data.assets', []);
 
         $this->assertDatabaseHas('contracts', ['contract_number' => 'CN-1', 'vendor_id' => $vendor->id]);
