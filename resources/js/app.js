@@ -1,6 +1,6 @@
 // Calls the API endpoints – same origin, so no CORS needed
 export async function api(method, path, body) {
-    const res = await fetch(`/api${path}`, {
+    const res = await fetch(`/api/v1${path}`, {
         method,
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined,

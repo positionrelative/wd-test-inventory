@@ -8,7 +8,7 @@ class ExampleTest extends TestCase
 {
     public function test_ping_endpoint_returns_ok(): void
     {
-        $this->getJson('/api/ping')
+        $this->getJson('/api/v1/ping')
             ->assertOk()
             ->assertJsonPath('status', 'ok');
     }
