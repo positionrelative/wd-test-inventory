@@ -6,13 +6,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Contracts\Services\ContractServiceInterface;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Contract\ContractResource;
+use App\Http\Requests\AssetIndexRequest;
+use App\Http\Resources\Asset\AssetSummaryResource;
 use App\Models\Asset;
 use App\Models\Contract;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
 /**
- * Assets on a contract: /api/contracts/{contract}/assets/{asset}.
+ * Assets on a contract: /api/v1/contracts/{contract}/assets[/{asset}].
  */
 final class ContractAssetController extends Controller
 {
@@ -21,10 +23,19 @@ final class ContractAssetController extends Controller
     ) {
     }
 
-    /** PUT: attach the asset (idempotent) and return the contract with its assets. */
-    public function attach(Contract $contract, Asset $asset): ContractResource
+    public function index(AssetIndexRequest $request, Contract $contract): AnonymousResourceCollection
     {
-        return ContractResource::make($this->contracts->attachAsset($contract, $asset));
+        return AssetSummaryResource::collection(
+            $this->contracts->paginateAssets($contract, $request->perPage(), $request->includes()),
+        );
+    }
+
+    /** PUT: attach the asset (idempotent). */
+    public function attach(Contract $contract, Asset $asset): Response
+    {
+        $this->contracts->attachAsset($contract, $asset);
+
+        return response()->noContent();
     }
 
     /** DELETE: detach the asset from the contract. */

@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             AssignRequestId::class,
             LogApiTraffic::class,
         ]);
+
+        $middleware->throttleApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Expected domain errors are part of the API contract, not application failures.

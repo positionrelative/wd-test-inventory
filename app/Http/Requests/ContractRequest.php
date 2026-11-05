@@ -8,6 +8,7 @@ use App\Models\Contract;
 use App\Models\Vendor;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Create (POST) and update (PUT/PATCH) of a contract.
@@ -20,24 +21,62 @@ final class ContractRequest extends FormRequest
     /** @return array<string, list<mixed>> */
     public function rules(): array
     {
-        $contract = $this->route('contract');
-        $contract = $contract instanceof Contract ? $contract : null;
+        $contract = $this->contract();
         $presence = $contract === null ? 'required' : 'sometimes';
 
         return [
             'title' => [$presence, 'string', 'max:100'],
-            'contract_number' => [
-                $presence,
-                'string',
-                'max:100',
-                Rule::unique(Contract::class)
-                    ->where('vendor_id', $this->input('vendor_id', $contract?->vendor_id))
-                    ->ignore($contract),
-            ],
+            'contract_number' => [$presence, 'string', 'max:100'],
             'start_date' => [$presence, 'date_format:' . self::DATE_FORMAT, ...$this->startDateBound($contract)],
             'end_date' => [$presence, 'date_format:' . self::DATE_FORMAT, ...$this->endDateBound($contract)],
             'vendor_id' => [$presence, 'integer', Rule::exists(Vendor::class, 'id')],
         ];
+    }
+
+    /** @return list<callable(Validator): void> */
+    public function after(): array
+    {
+        return [$this->uniqueContractNumberPerVendor(...)];
+    }
+
+    /**
+     * (vendor_id, contract_number) must be unique. Checked on the pair as it
+     * will be after the change, so changing only vendor_id (or only
+     * contract_number) is validated too, not left to the DB unique index.
+     */
+    private function uniqueContractNumberPerVendor(Validator $validator): void
+    {
+        if ($validator->errors()->hasAny(['contract_number', 'vendor_id'])) {
+            return;
+        }
+
+        $contract = $this->contract();
+        $vendorId = $this->input('vendor_id', $contract?->vendor_id);
+        $number = $this->input('contract_number', $contract?->contract_number);
+
+        if ($vendorId === null || $number === null) {
+            return;
+        }
+
+        $taken = Contract::query()
+            ->where('vendor_id', $vendorId)
+            ->where('contract_number', $number)
+            ->when($contract !== null, fn ($query) => $query->whereKeyNot($contract->getKey()))
+            ->exists();
+
+        if ($taken) {
+            $validator->errors()->add(
+                $this->has('contract_number') ? 'contract_number' : 'vendor_id',
+                'The contract number has already been taken for this vendor.',
+            );
+        }
+    }
+
+    private function contract(): ?Contract
+    {
+        $contract = $this->route('contract');
+
+        return $contract instanceof Contract ? $contract : null;
     }
 
     /**

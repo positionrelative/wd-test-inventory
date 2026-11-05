@@ -12,6 +12,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Stores API traffic in api_request_logs.
+ *
+ * Every payload (query, request body, response body) goes through the same
+ * pipeline: parse → mask → enforce the size limit.
+ */
 final class DatabaseApiTrafficLogger implements ApiTrafficLoggerInterface
 {
     private const TRUNCATED_SUFFIX = '...[truncated]';
@@ -29,50 +35,65 @@ final class DatabaseApiTrafficLogger implements ApiTrafficLoggerInterface
             'request_id' => RequestId::of($request),
             'method' => $request->getMethod(),
             'path' => Str::limit('/' . ltrim($request->path(), '/'), 2048, ''),
-            'query' => $this->masker->maskFields($request->query()) ?: null,
+            'query' => $this->payload($request->query() ?: null),
             'ip' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 512, '') ?: null,
             'request_headers' => $this->masker->maskHeaders($request->headers->all()),
-            'request_body' => $this->requestBody($request),
+            'request_body' => $this->payload($this->requestData($request)),
             'response_status' => $response->getStatusCode(),
             'response_headers' => $this->masker->maskHeaders($response->headers->all()),
-            'response_body' => $this->content((string) $response->getContent()),
+            'response_body' => $this->payload($this->decode((string) $response->getContent())),
             'duration_ms' => round($durationMs, 2),
         ]);
     }
 
     /**
-     * JSON and form bodies are already parsed by Laravel; anything else is kept raw.
+     * JSON and form bodies are already parsed by Laravel; anything else is decoded here.
      *
-     * @return array<array-key, mixed>|string|null
+     * @return array<array-key, mixed>|BodyNotStored|null
      */
-    private function requestBody(Request $request): array|string|null
+    private function requestData(Request $request): array|BodyNotStored|null
     {
         $input = $request->post();
 
-        return $input !== []
-            ? $this->masker->maskFields($input)
-            : $this->content((string) $request->getContent());
+        return $input !== [] ? $input : $this->decode((string) $request->getContent());
     }
 
-    /**
-     * JSON is stored decoded and masked; anything else (or anything too large)
-     * is stored as a, possibly truncated, string.
-     *
-     * @return array<array-key, mixed>|string|null
-     */
-    private function content(string $content): array|string|null
+    /** @return array<array-key, mixed>|BodyNotStored|null */
+    private function decode(string $content): array|BodyNotStored|null
     {
         if ($content === '') {
             return null;
         }
 
-        if (strlen($content) > $this->maxBodyLength) {
-            return Str::limit($content, $this->maxBodyLength, self::TRUNCATED_SUFFIX);
-        }
-
         $decoded = json_decode($content, true);
 
-        return is_array($decoded) ? $this->masker->maskFields($decoded) : $content;
+        return is_array($decoded) ? $decoded : new BodyNotStored(strlen($content));
+    }
+
+    /**
+     * Masks first, then applies the size limit.
+     *
+     * @param array<array-key, mixed>|BodyNotStored|null $data
+     * @return array<array-key, mixed>|string|null
+     */
+    private function payload(array|BodyNotStored|null $data): array|string|null
+    {
+        if ($data === null) {
+            return null;
+        }
+
+        if ($data instanceof BodyNotStored) {
+            return $data->describe();
+        }
+
+        $masked = $this->masker->maskFields($data);
+        $json = (string) json_encode($masked, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
+
+        if (strlen($json) <= $this->maxBodyLength) {
+            return $masked;
+        }
+
+        return mb_strcut($json, 0, $this->maxBodyLength, 'UTF-8') . self::TRUNCATED_SUFFIX;
     }
 }

@@ -96,6 +96,37 @@ final class ContractApiTest extends TestCase
         ])->assertCreated();
     }
 
+    public function test_changing_only_vendor_validates_contract_number_uniqueness(): void
+    {
+        $taken = Contract::factory()->create(['contract_number' => 'CN-SAME']);
+        $contract = Contract::factory()->create(['contract_number' => 'CN-SAME']);
+
+        $this->patchJson("/api/v1/contracts/{$contract->id}", ['vendor_id' => $taken->vendor_id])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonPath('error.errors.vendor_id.0', 'The contract number has already been taken for this vendor.');
+    }
+
+    public function test_changing_only_contract_number_validates_uniqueness_within_vendor(): void
+    {
+        $taken = Contract::factory()->create(['contract_number' => 'CN-TAKEN']);
+        $contract = Contract::factory()->create(['vendor_id' => $taken->vendor_id]);
+
+        $this->patchJson("/api/v1/contracts/{$contract->id}", ['contract_number' => 'CN-TAKEN'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('contract_number', 'error.errors');
+    }
+
+    public function test_update_keeps_own_contract_number_valid(): void
+    {
+        $contract = Contract::factory()->create();
+
+        $this->patchJson("/api/v1/contracts/{$contract->id}", [
+            'contract_number' => $contract->contract_number,
+            'vendor_id' => $contract->vendor_id,
+        ])->assertOk();
+    }
+
     public function test_partial_update_checks_dates_against_stored_values(): void
     {
         $contract = Contract::factory()->create([

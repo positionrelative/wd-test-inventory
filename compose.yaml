@@ -1,15 +1,25 @@
+# Shared by the PHP services (app = php-fpm, scheduler = Laravel scheduler).
+x-php: &php
+  build:
+    context: .
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+  volumes:
+    - .:/var/www/html
+  depends_on:
+    mysql:
+      condition: service_healthy
+
 services:
   app:
-    build:
-      context: .
-      args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
-    volumes:
-      - .:/var/www/html
-    depends_on:
-      mysql:
-        condition: service_healthy
+    <<: *php
+
+  # Runs scheduled tasks (routes/console.php), e.g. the daily API log pruning.
+  scheduler:
+    <<: *php
+    command: php artisan schedule:work
+    restart: unless-stopped
 
   nginx:
     image: nginx:1.29-alpine

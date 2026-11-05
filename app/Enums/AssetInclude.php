@@ -7,7 +7,8 @@ namespace App\Enums;
 use Illuminate\Http\Request;
 
 /**
- * Optional relations of the asset list: GET /api/v1/assets?include=model,manufacturer
+ * Optional relations of asset lists (?include=model,manufacturer):
+ * GET /api/v1/assets and GET /api/v1/contracts/{contract}/assets
  */
 enum AssetInclude: string
 {
@@ -21,6 +22,18 @@ enum AssetInclude: string
             self::Model => ['assetModel'],
             self::Manufacturer => ['manufacturer'],
         };
+    }
+
+    /**
+     * @param list<self> $includes
+     * @return list<string> All relations to eager load for the given includes.
+     */
+    public static function relationsFor(array $includes): array
+    {
+        return array_values(array_unique(array_merge(
+            [],
+            ...array_map(static fn (self $include) => $include->relations(), $includes),
+        )));
     }
 
     /** @return list<string> */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\Services\ContractServiceInterface;
+use App\Enums\AssetInclude;
 use App\Exceptions\AssetNotAttachedException;
 use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
@@ -54,11 +55,18 @@ final class ContractService implements ContractServiceInterface
         $contract->delete();
     }
 
-    public function attachAsset(Contract $contract, Asset $asset): Contract
+    public function paginateAssets(Contract $contract, int $perPage, array $includes = []): LengthAwarePaginator
+    {
+        // Served by the pivot's contract_id index (InnoDB appends the PK: contract_id, asset_id).
+        return $contract->assets()
+            ->with(AssetInclude::relationsFor($includes))
+            ->orderBy('assets.id')
+            ->paginate($perPage);
+    }
+
+    public function attachAsset(Contract $contract, Asset $asset): void
     {
         $contract->assets()->syncWithoutDetaching([$asset->getKey()]);
-
-        return $this->get($contract);
     }
 
     public function detachAsset(Contract $contract, Asset $asset): void

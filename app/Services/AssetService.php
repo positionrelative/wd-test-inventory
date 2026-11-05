@@ -17,13 +17,8 @@ final class AssetService implements AssetServiceInterface
 
     public function paginate(int $perPage, array $includes = []): LengthAwarePaginator
     {
-        $relations = array_unique(array_merge(
-            [],
-            ...array_map(static fn (AssetInclude $include) => $include->relations(), $includes),
-        ));
-
         return Asset::query()
-            ->with($relations)
+            ->with(AssetInclude::relationsFor($includes))
             ->orderBy('id')
             ->paginate($perPage);
     }
@@ -47,7 +42,6 @@ final class AssetService implements AssetServiceInterface
 
     public function delete(Asset $asset): void
     {
-        // Checked up front for a clear error; the FK constraints still guard against races.
         if ($asset->contracts()->exists() || $asset->assignments()->exists()) {
             throw AssetInUseException::for($asset);
         }

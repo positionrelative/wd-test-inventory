@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Contracts\Services;
 
+use App\Enums\AssetInclude;
 use App\Exceptions\AssetNotAttachedException;
 use App\Exceptions\ContractHasAssetsException;
 use App\Models\Asset;
@@ -27,8 +28,16 @@ interface ContractServiceInterface
     /** @throws ContractHasAssetsException When assets are still attached. */
     public function delete(Contract $contract): void;
 
+    /**
+     * Assets on the contract, paginated, for contracts with many assets.
+     *
+     * @param list<AssetInclude> $includes
+     * @return LengthAwarePaginator<int, Asset>
+     */
+    public function paginateAssets(Contract $contract, int $perPage, array $includes = []): LengthAwarePaginator;
+
     /** Idempotent: attaching an already attached asset changes nothing. */
-    public function attachAsset(Contract $contract, Asset $asset): Contract;
+    public function attachAsset(Contract $contract, Asset $asset): void;
 
     /** @throws AssetNotAttachedException When the asset is not on the contract. */
     public function detachAsset(Contract $contract, Asset $asset): void;

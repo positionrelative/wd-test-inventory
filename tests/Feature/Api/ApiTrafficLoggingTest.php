@@ -9,11 +9,59 @@ use App\Models\ApiRequestLog;
 use App\Models\AssetModel;
 use App\Services\Logging\SensitiveDataMasker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 final class ApiTrafficLoggingTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_large_response_is_masked_before_truncation(): void
+    {
+        config(['api_logging.max_body_length' => 200]);
+        Route::get('/api/v1/test-large', fn () => response()->json([
+            'token' => 'raw-secret-token',
+            'items' => array_fill(0, 100, 'x'),
+        ]));
+
+        $this->getJson('/api/v1/test-large')->assertOk();
+
+        $body = ApiRequestLog::query()->sole()->response_body;
+
+        $this->assertIsString($body);
+        $this->assertStringNotContainsString('raw-secret-token', $body);
+        $this->assertStringContainsString(SensitiveDataMasker::MASK, $body);
+        $this->assertStringEndsWith('...[truncated]', $body);
+        $this->assertLessThanOrEqual(200 + strlen('...[truncated]'), strlen($body));
+    }
+
+    public function test_size_limit_applies_to_parsed_request_body(): void
+    {
+        config(['api_logging.max_body_length' => 32]);
+
+        $this->postJson('/api/v1/assets', [
+            'asset_tag' => str_repeat('A', 1000),
+            'password' => 'hunter2',
+        ]);
+
+        $body = ApiRequestLog::query()->sole()->request_body;
+
+        $this->assertIsString($body);
+        $this->assertLessThanOrEqual(32 + strlen('...[truncated]'), strlen($body));
+        $this->assertStringNotContainsString('hunter2', $body);
+    }
+
+    public function test_non_json_body_is_not_stored(): void
+    {
+        $this->call('POST', '/api/v1/assets', [], [], [], [
+            'CONTENT_TYPE' => 'text/plain',
+            'HTTP_ACCEPT' => 'application/json',
+        ], 'token=raw-secret plain text');
+
+        $body = ApiRequestLog::query()->sole()->request_body;
+
+        $this->assertSame('[not stored: non-JSON body, 27 bytes]', $body);
+    }
 
     public function test_request_and_response_are_logged(): void
     {

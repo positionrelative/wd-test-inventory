@@ -18,9 +18,10 @@ Route::apiResource('manufacturers', ManufacturerController::class)->only('index'
 Route::apiResource('vendors', VendorController::class)->only('index');
 
 Route::controller(ContractAssetController::class)
-    ->prefix('contracts/{contract}/assets/{asset}')
+    ->prefix('contracts/{contract}/assets')
     ->name('contracts.assets.')
     ->group(function (): void {
-        Route::put('/', 'attach')->name('attach');
-        Route::delete('/', 'detach')->name('detach');
+        Route::get('/', 'index')->name('index');
+        Route::put('/{asset}', 'attach')->name('attach');
+        Route::delete('/{asset}', 'detach')->name('detach');
     });
