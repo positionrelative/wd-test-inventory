@@ -1,5 +1,6 @@
-# Shared by the PHP services (app = php-fpm, scheduler = Laravel scheduler).
+# Shared by the PHP services (app = php-fpm, scheduler, pulse, pulse-worker).
 x-php: &php
+  image: wd-test-php
   build:
     context: .
     args:
