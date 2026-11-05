@@ -16,6 +16,25 @@ final class ApiTrafficLoggingTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** Regression: requests rejected by the framework's base middleware (here ValidatePostSize) are logged too. */
+    public function test_request_rejected_by_base_middleware_is_logged_with_request_id(): void
+    {
+        $response = $this->call('POST', '/api/v1/assets', server: [
+            'CONTENT_LENGTH' => (string) (1024 ** 4),
+            'HTTP_ACCEPT' => 'application/json',
+        ]);
+
+        $response->assertStatus(413);
+        $requestId = $response->headers->get(RequestId::HEADER);
+
+        $this->assertNotNull($requestId);
+        $this->assertSame($requestId, $response->json('error.request_id'));
+
+        $log = ApiRequestLog::query()->sole();
+        $this->assertSame(413, $log->response_status);
+        $this->assertSame($requestId, $log->request_id);
+    }
+
     public function test_large_response_is_masked_before_truncation(): void
     {
         config(['api_logging.max_body_length' => 200]);

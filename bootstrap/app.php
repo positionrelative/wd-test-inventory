@@ -18,8 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Global, so unmatched API routes (404/405) also get a request ID and are logged.
-        $middleware->append([
+        // Global and first, so every API response gets a request ID and is logged.
+        $middleware->prepend([
             AssignRequestId::class,
             LogApiTraffic::class,
         ]);
