@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Errors;
 
 use App\Exceptions\ApiException;
-use App\Http\Requests\IndexRequest;
 use App\Http\Resources\Error\ErrorResource;
+use App\Rules\DecodableCursor;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Container\Attributes\Config;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -70,7 +70,7 @@ final class ApiExceptionRenderer
                 Response::HTTP_UNPROCESSABLE_ENTITY,
                 'validation_failed',
                 'The given data was invalid.',
-                ['cursor' => [IndexRequest::INVALID_CURSOR]],
+                ['cursor' => [DecodableCursor::MESSAGE]],
             ),
             default => $this->serverError($e),
         };

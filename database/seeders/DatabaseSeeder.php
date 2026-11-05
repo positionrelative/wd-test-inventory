@@ -29,17 +29,15 @@ class DatabaseSeeder extends Seeder
             VendorSeeder::class,
         ]);
 
-        // Factories reuse the seeded manufacturers and vendors instead of creating random ones.
         $manufacturers = Manufacturer::all();
         $vendors = Vendor::all();
 
-        // Contracts with assets on them, plus a few free assets.
         Contract::factory()
             ->count(3)
             ->recycle($vendors)
             ->hasAttached(Asset::factory()->count(3)->recycle($manufacturers), relationship: 'assets')
             ->create();
 
-        Asset::factory()->count(5)->recycle($manufacturers)->create();
+        Asset::factory()->count(10)->recycle($manufacturers)->create();
     }
 }

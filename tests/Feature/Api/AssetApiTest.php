@@ -113,16 +113,36 @@ final class AssetApiTest extends TestCase
             ]);
     }
 
+    public function test_index_includes_contracts_in_compact_form(): void
+    {
+        $asset = Asset::factory()->create();
+        $contract = Contract::factory()->create();
+        $contract->assets()->attach($asset);
+
+        $this->getJson('/api/v1/assets?include=contracts')
+            ->assertOk()
+            ->assertExactJsonStructure([
+                'data' => ['*' => [
+                    'id',
+                    'asset_tag',
+                    'serial_number',
+                    'contracts' => ['*' => ['id', 'title', 'contract_number', 'start_date', 'end_date']],
+                ]],
+                'meta' => ['per_page', 'next_cursor', 'prev_cursor'],
+            ])
+            ->assertJsonPath('data.0.contracts.0.id', $contract->id);
+    }
+
     public function test_index_eager_loads_includes_without_n_plus_one(): void
     {
         Asset::factory()->count(10)->create();
 
         DB::enableQueryLog();
-        $this->getJson('/api/v1/assets?include=model,manufacturer')->assertOk();
+        $this->getJson('/api/v1/assets?include=model,manufacturer,contracts')->assertOk();
         $queries = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        // assets + asset_models + manufacturers (+ traffic log insert), regardless of row count
+        // assets + asset_models + manufacturers + contracts (+ traffic log insert), regardless of row count
         $this->assertLessThanOrEqual(5, $queries);
     }
 
@@ -131,7 +151,10 @@ final class AssetApiTest extends TestCase
         $this->getJson('/api/v1/assets?include=model,owner')
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJsonPath('error.errors.include.0', 'Unknown include: owner. Allowed: model, manufacturer.');
+            ->assertJsonPath(
+                'error.errors.include.0',
+                'Unknown include: owner. Allowed: model, manufacturer, contracts.',
+            );
     }
 
     public function test_index_rejects_invalid_per_page(): void

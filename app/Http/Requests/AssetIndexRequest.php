@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\AssetInclude;
-use Closure;
+use App\Rules\KnownIncludes;
 
 final class AssetIndexRequest extends IndexRequest
 {
@@ -14,7 +14,7 @@ final class AssetIndexRequest extends IndexRequest
     {
         return [
             ...parent::rules(),
-            'include' => ['sometimes', 'bail', 'string', $this->knownIncludes(...)],
+            'include' => ['sometimes', 'bail', 'string', new KnownIncludes(AssetInclude::values())],
         ];
     }
 
@@ -22,18 +22,5 @@ final class AssetIndexRequest extends IndexRequest
     public function includes(): array
     {
         return AssetInclude::fromRequest($this);
-    }
-
-    private function knownIncludes(string $attribute, mixed $value, Closure $fail): void
-    {
-        $unknown = array_diff(AssetInclude::parse($value), AssetInclude::values());
-
-        if ($unknown !== []) {
-            $fail(sprintf(
-                'Unknown include: %s. Allowed: %s.',
-                implode(', ', $unknown),
-                implode(', ', AssetInclude::values()),
-            ));
-        }
     }
 }
