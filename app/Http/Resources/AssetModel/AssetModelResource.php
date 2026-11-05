@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\AssetModel;
 
-use App\Models\Manufacturer;
+use App\Http\Resources\ApiResource;
+use App\Models\AssetModel;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin Manufacturer */
-final class ManufacturerResource extends JsonResource
+/** @mixin AssetModel */
+final class AssetModelResource extends ApiResource
 {
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
@@ -17,6 +17,7 @@ final class ManufacturerResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'model_number' => $this->model_number,
         ];
     }
 }

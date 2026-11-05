@@ -6,9 +6,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Contracts\Services\AssetServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AssetIndexRequest;
 use App\Http\Requests\AssetRequest;
-use App\Http\Requests\IndexRequest;
-use App\Http\Resources\AssetResource;
+use App\Http\Resources\Asset\AssetResource;
+use App\Http\Resources\Asset\AssetSummaryResource;
 use App\Models\Asset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -21,9 +22,12 @@ final class AssetController extends Controller
     ) {
     }
 
-    public function index(IndexRequest $request): AnonymousResourceCollection
+    /** Minimal rows for a table; ?include=model,manufacturer adds flat related columns. */
+    public function index(AssetIndexRequest $request): AnonymousResourceCollection
     {
-        return AssetResource::collection($this->assets->paginate($request->perPage()));
+        return AssetSummaryResource::collection(
+            $this->assets->paginate($request->perPage(), $request->includes()),
+        );
     }
 
     public function store(AssetRequest $request): JsonResponse

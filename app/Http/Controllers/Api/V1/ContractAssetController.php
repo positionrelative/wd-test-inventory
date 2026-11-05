@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Contracts\Services\ContractServiceInterface;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ContractResource;
+use App\Http\Resources\Contract\ContractResource;
 use App\Models\Asset;
 use App\Models\Contract;
 use Illuminate\Http\Response;

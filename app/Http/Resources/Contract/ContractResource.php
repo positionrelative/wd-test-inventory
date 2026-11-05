@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Contract;
 
+use App\Http\Resources\ApiResource;
+use App\Http\Resources\Asset\AssetResource;
+use App\Http\Resources\Vendor\VendorResource;
 use App\Models\Contract;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Contract */
-final class ContractResource extends JsonResource
+final class ContractResource extends ApiResource
 {
     /** @return array<string, mixed> */
     public function toArray(Request $request): array

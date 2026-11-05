@@ -8,33 +8,88 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Contract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class AssetApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_index_returns_paginated_assets(): void
+    public function test_index_returns_minimal_rows_with_compact_pagination(): void
     {
         Asset::factory()->count(3)->create();
 
         $this->getJson('/api/v1/assets?per_page=2')
             ->assertOk()
+            ->assertExactJsonStructure([
+                'data' => ['*' => ['id', 'asset_tag', 'serial_number']],
+                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+            ])
             ->assertJsonCount(2, 'data')
             ->assertJsonPath('meta.total', 3)
             ->assertJsonPath('meta.per_page', 2)
-            ->assertJsonStructure([
-                'data' => [[
+            ->assertJsonPath('meta.last_page', 2);
+    }
+
+    public function test_index_includes_model_and_manufacturer_as_sibling_objects(): void
+    {
+        $asset = Asset::factory()->create();
+        $model = $asset->assetModel;
+
+        $this->getJson('/api/v1/assets?include=model,manufacturer')
+            ->assertOk()
+            ->assertExactJsonStructure([
+                'data' => ['*' => [
                     'id',
                     'asset_tag',
                     'serial_number',
-                    'model' => ['id', 'name', 'model_number', 'manufacturer' => ['id', 'name']],
-                    'created_at',
-                    'updated_at',
+                    'model' => ['id', 'name', 'model_number'],
+                    'manufacturer' => ['id', 'name'],
                 ]],
-                'links',
-                'meta',
+                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+            ])
+            ->assertJsonPath('data.0.model', [
+                'id' => $model->id,
+                'name' => $model->name,
+                'model_number' => $model->model_number,
+            ])
+            ->assertJsonPath('data.0.manufacturer', [
+                'id' => $model->manufacturer->id,
+                'name' => $model->manufacturer->name,
             ]);
+    }
+
+    public function test_index_includes_only_what_was_requested(): void
+    {
+        Asset::factory()->create();
+
+        $this->getJson('/api/v1/assets?include=manufacturer')
+            ->assertOk()
+            ->assertExactJsonStructure([
+                'data' => ['*' => ['id', 'asset_tag', 'serial_number', 'manufacturer' => ['id', 'name']]],
+                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
+            ]);
+    }
+
+    public function test_index_eager_loads_includes_without_n_plus_one(): void
+    {
+        Asset::factory()->count(10)->create();
+
+        DB::enableQueryLog();
+        $this->getJson('/api/v1/assets?include=model,manufacturer')->assertOk();
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        // count + assets + asset_models + manufacturers (+ traffic log insert), regardless of row count
+        $this->assertLessThanOrEqual(5, $queries);
+    }
+
+    public function test_index_rejects_unknown_include(): void
+    {
+        $this->getJson('/api/v1/assets?include=model,owner')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonPath('error.errors.include.0', 'Unknown include: owner. Allowed: model, manufacturer.');
     }
 
     public function test_index_rejects_invalid_per_page(): void
@@ -45,17 +100,37 @@ final class AssetApiTest extends TestCase
             ->assertJsonValidationErrors('per_page', 'error.errors');
     }
 
-    public function test_show_returns_asset(): void
+    public function test_show_returns_details_relations_and_timestamps(): void
     {
         $asset = Asset::factory()->create();
+        $contract = Contract::factory()->create();
+        $contract->assets()->attach($asset);
 
         $this->getJson("/api/v1/assets/{$asset->id}")
             ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'asset_tag',
+                    'serial_number',
+                    'model' => ['id', 'name', 'model_number'],
+                    'manufacturer' => ['id', 'name'],
+                    'contracts' => [['id', 'title', 'contract_number', 'start_date', 'end_date']],
+                    'created_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJsonMissingPath('data.model.manufacturer')
             ->assertJsonPath('data.id', $asset->id)
-            ->assertJsonPath('data.asset_tag', $asset->asset_tag)
             ->assertJsonPath('data.model.id', $asset->model_id)
-            ->assertJsonPath('data.model.manufacturer.id', $asset->assetModel->manufacturer_id)
-            ->assertJsonPath('data.model.manufacturer.name', $asset->assetModel->manufacturer->name);
+            ->assertJsonPath('data.manufacturer.name', $asset->assetModel->manufacturer->name)
+            ->assertJsonPath('data.contracts.0', [
+                'id' => $contract->id,
+                'title' => $contract->title,
+                'contract_number' => $contract->contract_number,
+                'start_date' => $contract->start_date->toDateString(),
+                'end_date' => $contract->end_date->toDateString(),
+            ]);
     }
 
     public function test_show_unknown_asset_returns_404(): void

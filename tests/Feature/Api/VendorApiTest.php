@@ -18,20 +18,14 @@ final class VendorApiTest extends TestCase
             Vendor::factory()->create(['name' => $name]);
         }
 
-        $response = $this->getJson('/api/v1/vendors')
+        $this->getJson('/api/v1/vendors')
             ->assertOk()
-            ->assertJsonStructure([
-                'data' => [['id', 'name', 'contact_person', 'email', 'phone']],
-                'links' => ['first', 'last', 'prev', 'next'],
-                'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+            ->assertExactJsonStructure([
+                'data' => ['*' => ['id', 'name', 'contact_person', 'email', 'phone']],
+                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
             ])
             ->assertJsonPath('data.*.name', ['Contoso', 'Fabrikam', 'Northwind'])
             ->assertJsonPath('meta.total', 3);
-
-        $this->assertSame(
-            ['id', 'name', 'contact_person', 'email', 'phone'],
-            array_keys($response->json('data.0')),
-        );
     }
 
     public function test_index_is_paginated(): void

@@ -17,7 +17,7 @@ final class ContractService implements ContractServiceInterface
     private const LIST_RELATIONS = ['vendor'];
 
     /** Relations of the detail view: the list ones plus the attached assets. */
-    private const DETAIL_RELATIONS = [...self::LIST_RELATIONS, 'assets.assetModel.manufacturer'];
+    private const DETAIL_RELATIONS = [...self::LIST_RELATIONS, 'assets.assetModel', 'assets.manufacturer'];
 
     public function paginate(int $perPage): LengthAwarePaginator
     {

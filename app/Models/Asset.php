@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 #[Fillable(['asset_tag', 'serial_number', 'model_id'])]
 class Asset extends Model
@@ -21,6 +22,24 @@ class Asset extends Model
     public function assetModel(): BelongsTo
     {
         return $this->belongsTo(AssetModel::class, 'model_id');
+    }
+
+    /**
+     * Manufacturer of the asset's model (assets.model_id → asset_models.manufacturer_id),
+     * eager loadable in one query without loading the model.
+     *
+     * @return HasOneThrough<Manufacturer, AssetModel, $this>
+     */
+    public function manufacturer(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Manufacturer::class,
+            AssetModel::class,
+            'id',
+            'id',
+            'model_id',
+            'manufacturer_id',
+        );
     }
 
     /** @return HasMany<AssetAssignment, $this> */

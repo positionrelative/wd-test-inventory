@@ -40,7 +40,13 @@ final class ContractApiTest extends TestCase
             ->assertJsonPath('data.start_date', $contract->start_date->toDateString())
             ->assertJsonPath('data.vendor.id', $contract->vendor_id)
             ->assertJsonCount(2, 'data.assets')
-            ->assertJsonStructure(['data' => ['assets' => [['id', 'asset_tag', 'model', 'attached_at']]]]);
+            ->assertJsonStructure(['data' => ['assets' => ['*' => [
+                'id',
+                'asset_tag',
+                'model' => ['id', 'name', 'model_number'],
+                'manufacturer' => ['id', 'name'],
+                'attached_at',
+            ]]]]);
     }
 
     public function test_store_creates_contract(): void

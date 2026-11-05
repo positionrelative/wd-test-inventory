@@ -8,7 +8,7 @@ use App\Contracts\Services\ContractServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ContractRequest;
 use App\Http\Requests\IndexRequest;
-use App\Http\Resources\ContractResource;
+use App\Http\Resources\Contract\ContractResource;
 use App\Models\Contract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;

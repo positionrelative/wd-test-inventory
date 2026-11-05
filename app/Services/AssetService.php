@@ -5,26 +5,32 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\Services\AssetServiceInterface;
+use App\Enums\AssetInclude;
 use App\Exceptions\AssetInUseException;
 use App\Models\Asset;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class AssetService implements AssetServiceInterface
 {
-    /** Relations returned with every asset. */
-    private const RELATIONS = ['assetModel.manufacturer'];
+    /** Relations of the detail view. */
+    private const DETAIL_RELATIONS = ['assetModel', 'manufacturer', 'contracts'];
 
-    public function paginate(int $perPage): LengthAwarePaginator
+    public function paginate(int $perPage, array $includes = []): LengthAwarePaginator
     {
+        $relations = array_unique(array_merge(
+            [],
+            ...array_map(static fn (AssetInclude $include) => $include->relations(), $includes),
+        ));
+
         return Asset::query()
-            ->with(self::RELATIONS)
+            ->with($relations)
             ->orderBy('id')
             ->paginate($perPage);
     }
 
     public function get(Asset $asset): Asset
     {
-        return $asset->load(self::RELATIONS);
+        return $asset->load(self::DETAIL_RELATIONS);
     }
 
     public function create(array $attributes): Asset

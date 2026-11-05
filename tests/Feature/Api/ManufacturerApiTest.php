@@ -18,17 +18,14 @@ final class ManufacturerApiTest extends TestCase
             Manufacturer::factory()->create(['name' => $name]);
         }
 
-        $response = $this->getJson('/api/v1/manufacturers')
+        $this->getJson('/api/v1/manufacturers')
             ->assertOk()
-            ->assertJsonStructure([
-                'data' => [['id', 'name']],
-                'links' => ['first', 'last', 'prev', 'next'],
-                'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+            ->assertExactJsonStructure([
+                'data' => ['*' => ['id', 'name']],
+                'meta' => ['current_page', 'per_page', 'total', 'last_page'],
             ])
             ->assertJsonPath('data.*.name', ['Apple', 'Dell', 'Lenovo'])
             ->assertJsonPath('meta.total', 3);
-
-        $this->assertSame(['id', 'name'], array_keys($response->json('data.0')));
     }
 
     public function test_index_is_paginated(): void

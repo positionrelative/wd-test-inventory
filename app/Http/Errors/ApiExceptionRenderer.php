@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Errors;
 
 use App\Exceptions\ApiException;
-use App\Http\Resources\ErrorResource;
+use App\Http\Resources\Error\ErrorResource;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Container\Attributes\Config;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

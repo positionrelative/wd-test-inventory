@@ -8,14 +8,15 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Shared pagination parameters of the list endpoints.
+ * Endpoint-specific list requests extend it with their own parameters.
  */
-final class IndexRequest extends FormRequest
+class IndexRequest extends FormRequest
 {
     public const DEFAULT_PER_PAGE = 15;
 
     public const MAX_PER_PAGE = 100;
 
-    /** @return array<string, list<string>> */
+    /** @return array<string, list<mixed>> */
     public function rules(): array
     {
         return [
