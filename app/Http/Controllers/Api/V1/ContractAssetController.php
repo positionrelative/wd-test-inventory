@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Contracts\Services\ContractServiceInterface;
+use App\Contracts\Services\ContractAssetServiceInterface;
 use App\Exceptions\AssetAlreadyAttachedException;
 use App\Exceptions\AssetNotAttachedException;
 use App\Http\Controllers\Controller;
@@ -22,7 +22,7 @@ use Illuminate\Http\Response;
 final class ContractAssetController extends Controller
 {
     public function __construct(
-        private readonly ContractServiceInterface $contracts,
+        private readonly ContractAssetServiceInterface $contractAssets,
     ) {
     }
 
@@ -35,7 +35,7 @@ final class ContractAssetController extends Controller
     public function index(AssetIndexRequest $request, Contract $contract): AnonymousResourceCollection
     {
         return AssetSummaryResource::collection(
-            $this->contracts->paginateAssets($contract, $request->perPage(), $request->includes()),
+            $this->contractAssets->paginateAssets($contract, $request->perPage(), $request->includes()),
         );
     }
 
@@ -47,7 +47,7 @@ final class ContractAssetController extends Controller
      */
     public function count(Contract $contract): CountResource
     {
-        return new CountResource($this->contracts->countAssets($contract));
+        return new CountResource($this->contractAssets->countAssets($contract));
     }
 
     /**
@@ -60,7 +60,7 @@ final class ContractAssetController extends Controller
      */
     public function attach(Contract $contract, Asset $asset): JsonResponse
     {
-        $this->contracts->attachAsset($contract, $asset);
+        $this->contractAssets->attachAsset($contract, $asset);
 
         return AssetSummaryResource::make($asset)
             ->response()
@@ -76,7 +76,7 @@ final class ContractAssetController extends Controller
      */
     public function detach(Contract $contract, Asset $asset): Response
     {
-        $this->contracts->detachAsset($contract, $asset);
+        $this->contractAssets->detachAsset($contract, $asset);
 
         return response()->noContent();
     }
