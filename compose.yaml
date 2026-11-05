@@ -10,6 +10,8 @@ x-php: &php
   depends_on:
     mysql:
       condition: service_healthy
+    redis:
+      condition: service_healthy
 
 services:
   app:
@@ -25,6 +27,12 @@ services:
   pulse:
     <<: *php
     command: php artisan pulse:check
+    restart: unless-stopped
+
+  # Moves Pulse entries from the Redis ingest stream into the database in batches.
+  pulse-worker:
+    <<: *php
+    command: php artisan pulse:work
     restart: unless-stopped
 
   nginx:
@@ -52,6 +60,17 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-root}"]
       interval: 5s
       timeout: 5s
+      retries: 20
+
+  # Cache (rate limiter, counts, Pulse cache and locks) and the Pulse ingest stream.
+  # Volatile data only, so no persistence.
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 20
 
   # Code quality, only with the "sonar" profile:
