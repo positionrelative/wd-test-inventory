@@ -44,7 +44,7 @@ A hibák egységes `error` objektumban érkeznek, a kérésazonosító az `X-Req
 - OpenAPI JSON: `http://localhost:8080/docs/api.json`.
 
 Mindkét útvonal HTTP Basic Auth-tal védett.
-A `.env` fájlban állítsd be az `API_DOCS_USERNAME` és `API_DOCS_PASSWORD` értékét.
+A `.env` fájlban szükséges beállítani az `API_DOCS_USERNAME` és `API_DOCS_PASSWORD` értékét.
 Üres beállításokkal a dokumentáció zárva marad.
 A dokumentáció felülete nem igényel helyi frontend-buildet.
 
@@ -75,15 +75,3 @@ docker compose exec app vendor/bin/pint --test
 docker compose logs -f app nginx scheduler
 docker compose down
 ```
-
-A tesztek memóriabeli SQLite-adatbázist használnak.
-
-## Felépítés
-
-- `routes/api.php`: verziózott API-útvonalak.
-- `bootstrap/app.php`: routing, middleware-ek és hibakezelés.
-- `app/Http`: kontrollerek, validáció, válaszok és middleware-ek.
-- `app/Services`: üzleti műveletek és naplózás.
-- `app/OpenApi`: dokumentációs kiegészítések.
-- `database`: migrációk, factory-k és seederek.
-- `tests`: unit- és funkcionális tesztek.
